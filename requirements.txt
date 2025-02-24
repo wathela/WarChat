@@ -1,0 +1,26 @@
+python-dotenv
+
+# Database & Vector Storage
+sqlalchemy
+pgvector
+
+# Apache Airflow Providers
+apache-airflow-providers-apache-spark
+apache-airflow-providers-postgres
+apache-airflow-providers-sqlite
+
+# PySpark (for distributed computing)
+pyspark
+
+# AI Model Serving (if using Ollama)
+ollama
+
+# Compatibility Fixes
+protobuf<3.21.0,>=3.12.0  # Avoids descriptor issues
+grpcio>=1.32.0            # Required for PySpark & Airflow communication
+numpy                     # Required by many ML and DB libraries
+
+# Optional but recommended
+pandas                    # Useful for data processing in Spark
+pyarrow<10.1.0,>=10.0.1 # Needed for Apache Arrow optimizations
+pydantic==1.10.1 

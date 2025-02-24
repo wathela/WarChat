@@ -1,0 +1,141 @@
+
+
+services:
+  postgres:
+    image: postgis/postgis:latest
+    container_name: postgres_container
+    # restart: always
+    environment:
+      POSTGRES_USER: warchat
+      POSTGRES_PASSWORD: warchat
+      POSTGRES_DB: wardb
+    ports:
+      - "5432:5432"
+    networks:
+      - my_network
+
+  pgvector:
+    image: phidata/pgvector:16
+    container_name: pgvector
+    restart: always
+    environment:
+      POSTGRES_DB: warchat-vectordb
+      POSTGRES_USER: warchat-vecotr
+      POSTGRES_PASSWORD: warchat-vector
+    ports:
+      - "5532:5432"
+    networks:
+      - my_network
+
+  airflow_postgres:
+    image: postgres:14
+    container_name: airflow_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflowdb
+    ports:
+      - "5433:5432"
+    networks:
+      - my_network
+
+  spark-master:
+    image: bitnami/spark:latest
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - my_network
+
+  spark-worker:
+    image: bitnami/spark:latest
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    ports:
+      - "8081:8081"
+    networks:
+      - my_network
+
+  airflow-webserver:
+    image: apache/airflow:2.6.0-python3.9
+    # build: .
+    container_name: airflow-webserver
+    entrypoint: ["/bin/bash",'/opt/airflow/script/entrypoint.sh']
+    restart: always
+    depends_on:
+      - airflow-init
+      - postgres
+      - pgvector
+      - airflow_postgres
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=LocalExecutor
+      # - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflowdb
+      - AIRFLOW__CORE__FERNET_KEY=SECRET_KEY
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    ports:
+      - "8082:8080"
+    command: airflow-webserver
+    healthcheck:
+      test: ['CMD-SHELL', "[ -f /opt/airflow/airflow-webserver.pid ]"]
+      # test: ["CMD", "curl --fail http://localhost:8080/health"]
+      interval: 30s
+      timeout: 300s
+      retries: 3
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./script/entrypoint.sh:/opt/airflow/script/entrypoint.sh
+      - ./requirements.txt:/opt/airflow/requirements.txt
+      # - /Users/wathelahamed/opt/anaconda3/envs/rag:/path/in/container/env
+    networks:
+      - my_network
+
+  airflow-scheduler:
+    image: apache/airflow:2.6.0-python3.9
+    container_name: airflow-scheduler
+    # entrypoint: ["/bin/bash",'/opt/airflow/script/entrypoint.sh']
+    restart: always
+    depends_on:
+      airflow-webserver:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflowdb
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./script/entrypoint.sh:/opt/airflow/script/entrypoint.sh
+      - ./requirements.txt:/opt/airflow/requirements.txt
+
+    command: bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
+    networks:
+      - my_network
+
+  airflow-init:
+    image: apache/airflow:2.6.0-python3.9
+    container_name: airflow-init
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflowdb
+
+    entrypoint: ["airflow", "db", "init"]
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+
+
+
