@@ -10,13 +10,13 @@ WarChat is an AI-driven web application designed to track and analyze the ongoin
 - **Ollama** – Runs DeepSeek locally for efficient processing  
 - **Knowledge Base RAG** – Context-aware retrieval system  
 - **Nomic-Embed-Text** – For data embedding for semantic search 
-- **pgvector** – Vector database for embeddings storing  
-- **Cosine Similarity** –For matching user prompt with stored knowledge  
+- **pgvector** – Vector database for embedding storage 
+- **Cosine Similarity** – For matching user prompt with stored embedding  
 
 🛠 **Infrastructure & Deployment:**  
-- **FastAPI** – Backend API for seamless data access  
-- **Streamlit** – Interactive UI for easy user interaction  
-- **Airflow & Spark** – Data orchestration and automated daily updates  
+- **FastAPI** – Backend API endpoints 
+- **Streamlit** – APP frontend  
+- **Airflow & Spark** – For ACLED data orchestration and automated daily updates  
 
 ## **System Flowchart**  
 <p align="center">
